@@ -1,0 +1,39 @@
+[project]
+name = "datasette-ports"
+version = "0.1"
+description = "Find all currently running Datasette instances and list their ports"
+readme = "README.md"
+authors = [{name = "Simon Willison"}]
+license = "Apache-2.0"
+classifiers=[
+    "Framework :: Datasette"
+]
+requires-python = ">=3.10"
+dependencies = [
+    "datasette"
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project.urls]
+Homepage = "https://github.com/datasette/datasette-ports"
+Changelog = "https://github.com/datasette/datasette-ports/releases"
+Issues = "https://github.com/datasette/datasette-ports/issues"
+CI = "https://github.com/datasette/datasette-ports/actions"
+
+[project.entry-points.datasette]
+ports = "datasette_ports"
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+
