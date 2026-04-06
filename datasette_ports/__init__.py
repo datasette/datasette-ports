@@ -5,7 +5,13 @@ import subprocess
 
 import click
 import httpx
-from datasette import hookimpl
+
+try:
+    from datasette import hookimpl
+except ImportError:
+
+    def hookimpl(fn):
+        return fn
 
 
 def parse_lsof(output):

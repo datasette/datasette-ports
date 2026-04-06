@@ -10,11 +10,13 @@ classifiers=[
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "datasette"
+    "click",
+    "httpx"
 ]
 
 [dependency-groups]
 dev = [
+    "datasette",
     "pytest",
     "pytest-asyncio"
 ]

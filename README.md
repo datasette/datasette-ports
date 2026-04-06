@@ -9,7 +9,7 @@ Find all currently running Datasette instances on your machine and list their po
 
 ## Installation
 
-Install this plugin in the same environment as Datasette.
+Install this as a plugin in the same environment as Datasette.
 ```bash
 datasette install datasette-ports
 ```
@@ -18,7 +18,11 @@ Or run it directly using `uvx`:
 ```bash
 uvx datasette-ports
 ```
-
+Or install it as a standalone tool:
+```bash
+uv tool install datasette-ports
+datasette-ports
+```
 ## Usage
 
 If installed as a Datasette plugin:
@@ -88,11 +92,12 @@ datasette-ports --json
 
 ## Development
 
-To set up this plugin locally, first checkout the code. You can confirm it is available like this:
+To set up this project locally, first checkout the code. You can confirm it is available like this:
 ```bash
 cd datasette-ports
-# Confirm the plugin is visible
-uv run datasette plugins
+uv run datasette-ports --help
+# Or:
+uv run datasette ports --help
 ```
 To run the tests:
 ```bash
