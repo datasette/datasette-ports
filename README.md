@@ -13,12 +13,24 @@ Install this plugin in the same environment as Datasette.
 ```bash
 datasette install datasette-ports
 ```
+
+Or run it directly using `uvx`:
+```bash
+uvx datasette-ports
+```
+
 ## Usage
 
-Run this command:
+If installed as a Datasette plugin:
 
 ```bash
 datasette ports
+```
+
+Or as a standalone command:
+
+```bash
+datasette-ports
 ```
 This uses `lsof` to find all Python processes listening on TCP ports, then probes each one to check if it is a Datasette instance. For each instance found it displays the URL, Datasette version, attached databases and installed plugins.
 
@@ -43,6 +55,8 @@ Use `--json` to get machine-readable output:
 
 ```bash
 datasette ports --json
+# or
+datasette-ports --json
 ```
 ```json
 [

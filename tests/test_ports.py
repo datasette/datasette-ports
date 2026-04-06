@@ -44,23 +44,25 @@ def _fake_probe(responses):
 
 
 def test_ports_command(mock_lsof, mock_probe):
-    mock_probe.side_effect = _fake_probe({
-        ("127.0.0.1", 8001): {
-            "databases": ["creatures"],
-            "version": "1.0a26",
-            "plugins": ["datasette-llm"],
-        },
-        ("127.0.0.1", 8333): {
-            "databases": ["data", "logs"],
-            "version": "0.65.2",
-            "plugins": [],
-        },
-        ("0.0.0.0", 8014): {
-            "databases": ["content", "_internal"],
-            "version": "1.0a26",
-            "plugins": ["datasette-llm", "datasette-extract"],
-        },
-    })
+    mock_probe.side_effect = _fake_probe(
+        {
+            ("127.0.0.1", 8001): {
+                "databases": ["creatures"],
+                "version": "1.0a26",
+                "plugins": ["datasette-llm"],
+            },
+            ("127.0.0.1", 8333): {
+                "databases": ["data", "logs"],
+                "version": "0.65.2",
+                "plugins": [],
+            },
+            ("0.0.0.0", 8014): {
+                "databases": ["content", "_internal"],
+                "version": "1.0a26",
+                "plugins": ["datasette-llm", "datasette-extract"],
+            },
+        }
+    )
 
     runner = CliRunner()
     result = runner.invoke(cli, ["ports"])
@@ -78,13 +80,15 @@ def test_ports_command(mock_lsof, mock_probe):
 
 
 def test_ports_no_plugins_line_when_empty(mock_lsof, mock_probe):
-    mock_probe.side_effect = _fake_probe({
-        ("127.0.0.1", 8001): {
-            "databases": ["db1"],
-            "version": "0.65.2",
-            "plugins": [],
-        },
-    })
+    mock_probe.side_effect = _fake_probe(
+        {
+            ("127.0.0.1", 8001): {
+                "databases": ["db1"],
+                "version": "0.65.2",
+                "plugins": [],
+            },
+        }
+    )
 
     runner = CliRunner()
     result = runner.invoke(cli, ["ports"])
@@ -93,13 +97,15 @@ def test_ports_no_plugins_line_when_empty(mock_lsof, mock_probe):
 
 
 def test_ports_json_output(mock_lsof, mock_probe):
-    mock_probe.side_effect = _fake_probe({
-        ("127.0.0.1", 8001): {
-            "databases": ["creatures"],
-            "version": "1.0a26",
-            "plugins": ["datasette-llm"],
-        },
-    })
+    mock_probe.side_effect = _fake_probe(
+        {
+            ("127.0.0.1", 8001): {
+                "databases": ["creatures"],
+                "version": "1.0a26",
+                "plugins": ["datasette-llm"],
+            },
+        }
+    )
 
     runner = CliRunner()
     result = runner.invoke(cli, ["ports", "--json"])

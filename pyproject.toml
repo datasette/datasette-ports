@@ -24,6 +24,9 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 
+[project.scripts]
+datasette-ports = "datasette_ports:cli"
+
 [project.urls]
 Homepage = "https://github.com/datasette/datasette-ports"
 Changelog = "https://github.com/datasette/datasette-ports/releases"

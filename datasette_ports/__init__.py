@@ -85,48 +85,62 @@ async def probe_port(host, port):
     return None
 
 
-@hookimpl
-def register_commands(cli):
-    @cli.command()
-    @click.option("--json", "output_json", is_flag=True, help="Output as JSON")
-    def ports(output_json):
-        """Find all currently running Datasette instances and list their ports."""
-        lsof_output = get_lsof_output()
-        candidates = parse_lsof(lsof_output)
+def _find_instances(output_json):
+    """Find all currently running Datasette instances and list their ports."""
+    lsof_output = get_lsof_output()
+    candidates = parse_lsof(lsof_output)
 
-        if not candidates:
-            if output_json:
-                click.echo("[]")
-            else:
-                click.echo("No running Datasette instances found")
-            return
+    if not candidates:
+        if output_json:
+            click.echo("[]")
+        else:
+            click.echo("No running Datasette instances found")
+        return
 
-        async def gather_results():
-            tasks = [probe_port(host, port) for host, port in candidates]
-            return await asyncio.gather(*tasks)
+    async def gather_results():
+        tasks = [probe_port(host, port) for host, port in candidates]
+        return await asyncio.gather(*tasks)
 
-        results = asyncio.run(gather_results())
+    results = asyncio.run(gather_results())
 
-        instances = []
-        for (host, port), info in zip(candidates, results):
-            if info is not None:
-                instances.append({
+    instances = []
+    for (host, port), info in zip(candidates, results):
+        if info is not None:
+            instances.append(
+                {
                     "url": f"http://{host}:{port}/",
                     "host": host,
                     "port": port,
                     "version": info["version"],
                     "databases": info["databases"],
                     "plugins": info["plugins"],
-                })
+                }
+            )
 
-        if output_json:
-            click.echo(json_module.dumps(instances, indent=2))
-        elif instances:
-            for instance in instances:
-                version_str = f" - v{instance['version']}" if instance["version"] else ""
-                click.echo(f"{instance['url']}{version_str}")
-                click.echo(f"  Databases: {', '.join(instance['databases'])}")
-                if instance["plugins"]:
-                    click.echo(f"  Plugins: {', '.join(instance['plugins'])}")
-        else:
-            click.echo("No running Datasette instances found")
+    if output_json:
+        click.echo(json_module.dumps(instances, indent=2))
+    elif instances:
+        for instance in instances:
+            version_str = f" - v{instance['version']}" if instance["version"] else ""
+            click.echo(f"{instance['url']}{version_str}")
+            click.echo(f"  Databases: {', '.join(instance['databases'])}")
+            if instance["plugins"]:
+                click.echo(f"  Plugins: {', '.join(instance['plugins'])}")
+    else:
+        click.echo("No running Datasette instances found")
+
+
+@click.command()
+@click.option("--json", "output_json", is_flag=True, help="Output as JSON")
+def cli(output_json):
+    """Find all currently running Datasette instances and list their ports."""
+    _find_instances(output_json)
+
+
+@hookimpl
+def register_commands(cli):
+    @cli.command()
+    @click.option("--json", "output_json", is_flag=True, help="Output as JSON")
+    def ports(output_json):
+        """Find all currently running Datasette instances and list their ports."""
+        _find_instances(output_json)
