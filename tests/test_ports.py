@@ -47,17 +47,23 @@ def test_ports_command(mock_lsof, mock_probe):
     mock_probe.side_effect = _fake_probe(
         {
             ("127.0.0.1", 8001): {
-                "databases": ["creatures"],
+                "databases": [{"name": "creatures", "path": "/tmp/creatures.db"}],
                 "version": "1.0a26",
                 "plugins": ["datasette-llm"],
             },
             ("127.0.0.1", 8333): {
-                "databases": ["data", "logs"],
+                "databases": [
+                    {"name": "data", "path": "data.db"},
+                    {"name": "logs", "path": None},
+                ],
                 "version": "0.65.2",
                 "plugins": [],
             },
             ("0.0.0.0", 8014): {
-                "databases": ["content", "_internal"],
+                "databases": [
+                    {"name": "content", "path": "content.db"},
+                    {"name": "_internal", "path": None},
+                ],
                 "version": "1.0a26",
                 "plugins": ["datasette-llm", "datasette-extract"],
             },
@@ -68,13 +74,17 @@ def test_ports_command(mock_lsof, mock_probe):
     result = runner.invoke(cli, ["ports"])
     assert result.exit_code == 0, result.output
     assert "http://127.0.0.1:8001/ - v1.0a26" in result.output
-    assert "  Databases: creatures" in result.output
-    assert "  Plugins: datasette-llm" in result.output
+    assert "  Databases:" in result.output
+    assert "    creatures: /tmp/creatures.db" in result.output
+    assert "  Plugins:" in result.output
+    assert "    datasette-llm" in result.output
     assert "http://127.0.0.1:8333/ - v0.65.2" in result.output
-    assert "  Databases: data, logs" in result.output
+    assert "    data: data.db" in result.output
+    assert "    logs" in result.output
     assert "http://0.0.0.0:8014/ - v1.0a26" in result.output
-    assert "  Databases: content, _internal" in result.output
-    assert "  Plugins: datasette-llm, datasette-extract" in result.output
+    assert "    content: content.db" in result.output
+    assert "    _internal" in result.output
+    assert "    datasette-extract" in result.output
     # Port 8000 returned None (not datasette), should not appear
     assert "8000" not in result.output
 
@@ -83,7 +93,7 @@ def test_ports_no_plugins_line_when_empty(mock_lsof, mock_probe):
     mock_probe.side_effect = _fake_probe(
         {
             ("127.0.0.1", 8001): {
-                "databases": ["db1"],
+                "databases": [{"name": "db1", "path": None}],
                 "version": "0.65.2",
                 "plugins": [],
             },
@@ -100,7 +110,7 @@ def test_ports_json_output(mock_lsof, mock_probe):
     mock_probe.side_effect = _fake_probe(
         {
             ("127.0.0.1", 8001): {
-                "databases": ["creatures"],
+                "databases": [{"name": "creatures", "path": "/tmp/creatures.db"}],
                 "version": "1.0a26",
                 "plugins": ["datasette-llm"],
             },
@@ -115,7 +125,7 @@ def test_ports_json_output(mock_lsof, mock_probe):
     assert data[0]["url"] == "http://127.0.0.1:8001/"
     assert data[0]["port"] == 8001
     assert data[0]["version"] == "1.0a26"
-    assert data[0]["databases"] == ["creatures"]
+    assert data[0]["databases"] == [{"name": "creatures", "path": "/tmp/creatures.db"}]
     assert data[0]["plugins"] == ["datasette-llm"]
 
 

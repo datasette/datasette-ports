@@ -66,7 +66,11 @@ async def probe_port(host, port):
             if not isinstance(databases_data, list):
                 return None
 
-            databases = [db["name"] for db in databases_data if "name" in db]
+            databases = [
+                {"name": db["name"], "path": db.get("path")}
+                for db in databases_data
+                if "name" in db
+            ]
 
             # Extract version
             version = None
@@ -129,9 +133,16 @@ def _find_instances(output_json):
         for instance in instances:
             version_str = f" - v{instance['version']}" if instance["version"] else ""
             click.echo(f"{instance['url']}{version_str}")
-            click.echo(f"  Databases: {', '.join(instance['databases'])}")
+            click.echo("  Databases:")
+            for db in instance["databases"]:
+                if db["path"]:
+                    click.echo(f"    {db['name']}: {db['path']}")
+                else:
+                    click.echo(f"    {db['name']}")
             if instance["plugins"]:
-                click.echo(f"  Plugins: {', '.join(instance['plugins'])}")
+                click.echo("  Plugins:")
+                for plugin in instance["plugins"]:
+                    click.echo(f"    {plugin}")
     else:
         click.echo("No running Datasette instances found")
 

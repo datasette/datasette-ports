@@ -41,17 +41,32 @@ This uses `lsof` to find all Python processes listening on TCP ports, then probe
 Example output:
 ```
 http://127.0.0.1:8007/ - v1.0a26
-  Databases: simonwillisonblog
-  Plugins: datasette-llm, datasette-secrets
+  Databases:
+    simonwillisonblog: simonwillisonblog.db
+  Plugins:
+    datasette-llm
+    datasette-secrets
 http://127.0.0.1:8001/ - v1.0a26
-  Databases: creatures
-  Plugins: datasette-extract, datasette-llm, datasette-secrets
+  Databases:
+    creatures: /tmp/creatures.db
+  Plugins:
+    datasette-extract
+    datasette-llm
+    datasette-secrets
 http://127.0.0.1:8900/ - v0.65.2
-  Databases: logs
+  Databases:
+    logs: /Users/simon/Library/Application Support/io.datasette.llm/logs.db
 http://0.0.0.0:8014/ - v1.0a26
-  Databases: content, trees, _internal
-  Plugins: datasette-llm, datasette-visible-internal-db
+  Databases:
+    content: content.db
+    trees: trees.db
+    _internal
+  Plugins:
+    datasette-llm
+    datasette-visible-internal-db
 ```
+
+Database paths are taken from each instance's `/-/databases.json` endpoint. They may be relative to the process's working directory, or absent for in-memory databases.
 
 ### JSON output
 
@@ -70,7 +85,7 @@ datasette-ports --json
     "port": 8007,
     "version": "1.0a26",
     "databases": [
-      "simonwillisonblog"
+      {"name": "simonwillisonblog", "path": "simonwillisonblog.db"}
     ],
     "plugins": [
       "datasette-llm",
@@ -83,7 +98,7 @@ datasette-ports --json
     "port": 8900,
     "version": "0.65.2",
     "databases": [
-      "logs"
+      {"name": "logs", "path": "/Users/simon/Library/Application Support/io.datasette.llm/logs.db"}
     ],
     "plugins": []
   }
