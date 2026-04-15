@@ -1,6 +1,6 @@
 [project]
 name = "datasette-ports"
-version = "0.2"
+version = "0.3"
 description = "Find all currently running Datasette instances and list their ports"
 readme = "README.md"
 authors = [{name = "Simon Willison"}]
