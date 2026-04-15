@@ -1,5 +1,6 @@
 import asyncio
 import json as json_module
+import os
 import re
 import subprocess
 
@@ -15,17 +16,47 @@ except ImportError:
 
 
 def parse_lsof(output):
-    """Parse lsof output to extract (host, port) pairs for Python TCP listeners."""
+    """Parse lsof output to extract (host, port, pid) tuples for Python TCP listeners."""
     results = []
     for line in output.strip().splitlines():
         match = re.search(r"TCP\s+(\S+):(\d+)\s+\(LISTEN\)", line)
-        if match:
-            host = match.group(1)
-            port = int(match.group(2))
-            if host == "*":
-                host = "0.0.0.0"
-            results.append((host, port))
+        if not match:
+            continue
+        host = match.group(1)
+        port = int(match.group(2))
+        if host == "*":
+            host = "0.0.0.0"
+        pid = None
+        parts = line.split()
+        if len(parts) >= 2 and parts[1].isdigit():
+            pid = int(parts[1])
+        results.append((host, port, pid))
     return results
+
+
+def get_process_cwd(pid):
+    """Return the working directory of a process, or None if it can't be determined."""
+    if pid is None:
+        return None
+    # Linux: /proc/<pid>/cwd is a symlink to the cwd
+    proc_path = f"/proc/{pid}/cwd"
+    try:
+        return os.readlink(proc_path)
+    except (OSError, NotImplementedError):
+        pass
+    # macOS / BSD fallback: lsof -p <pid> -a -d cwd -Fn
+    try:
+        result = subprocess.run(
+            ["lsof", "-p", str(pid), "-a", "-d", "cwd", "-Fn"],
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        return None
+    for line in result.stdout.splitlines():
+        if line.startswith("n"):
+            return line[1:]
+    return None
 
 
 def get_lsof_output():
@@ -108,24 +139,34 @@ def _find_instances(output_json):
         return
 
     async def gather_results():
-        tasks = [probe_port(host, port) for host, port in candidates]
+        tasks = [probe_port(host, port) for host, port, _ in candidates]
         return await asyncio.gather(*tasks)
 
     results = asyncio.run(gather_results())
 
     instances = []
-    for (host, port), info in zip(candidates, results):
-        if info is not None:
-            instances.append(
-                {
-                    "url": f"http://{host}:{port}/",
-                    "host": host,
-                    "port": port,
-                    "version": info["version"],
-                    "databases": info["databases"],
-                    "plugins": info["plugins"],
-                }
-            )
+    for (host, port, pid), info in zip(candidates, results):
+        if info is None:
+            continue
+        cwd = get_process_cwd(pid)
+        databases = []
+        for db in info["databases"]:
+            path = db["path"]
+            if path and cwd and not os.path.isabs(path):
+                path = os.path.normpath(os.path.join(cwd, path))
+            databases.append({"name": db["name"], "path": path})
+        instances.append(
+            {
+                "url": f"http://{host}:{port}/",
+                "host": host,
+                "port": port,
+                "pid": pid,
+                "cwd": cwd,
+                "version": info["version"],
+                "databases": databases,
+                "plugins": info["plugins"],
+            }
+        )
 
     if output_json:
         click.echo(json_module.dumps(instances, indent=2))
@@ -133,6 +174,8 @@ def _find_instances(output_json):
         for instance in instances:
             version_str = f" - v{instance['version']}" if instance["version"] else ""
             click.echo(f"{instance['url']}{version_str}")
+            if instance.get("cwd"):
+                click.echo(f"  Directory: {instance['cwd']}")
             click.echo("  Databases:")
             for db in instance["databases"]:
                 if db["path"]:

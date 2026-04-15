@@ -41,12 +41,14 @@ This uses `lsof` to find all Python processes listening on TCP ports, then probe
 Example output:
 ```
 http://127.0.0.1:8007/ - v1.0a26
+  Directory: /Users/simon/dev/blog
   Databases:
-    simonwillisonblog: simonwillisonblog.db
+    simonwillisonblog: /Users/simon/dev/blog/simonwillisonblog.db
   Plugins:
     datasette-llm
     datasette-secrets
 http://127.0.0.1:8001/ - v1.0a26
+  Directory: /Users/simon/dev/creatures
   Databases:
     creatures: /tmp/creatures.db
   Plugins:
@@ -57,16 +59,17 @@ http://127.0.0.1:8900/ - v0.65.2
   Databases:
     logs: /Users/simon/Library/Application Support/io.datasette.llm/logs.db
 http://0.0.0.0:8014/ - v1.0a26
+  Directory: /Users/simon/dev/datasette
   Databases:
-    content: content.db
-    trees: trees.db
+    content: /Users/simon/dev/datasette/content.db
+    trees: /Users/simon/dev/datasette/trees.db
     _internal
   Plugins:
     datasette-llm
     datasette-visible-internal-db
 ```
 
-Database paths are taken from each instance's `/-/databases.json` endpoint. They may be relative to the process's working directory, or absent for in-memory databases.
+Database paths come from each instance's `/-/databases.json` endpoint. Where the process working directory can be determined (via `/proc/<pid>/cwd` on Linux or `lsof` on macOS), relative paths are resolved to absolute ones. On platforms where the working directory cannot be determined the `Directory:` line is omitted and paths are shown as reported by Datasette.
 
 ### JSON output
 
@@ -83,9 +86,11 @@ datasette-ports --json
     "url": "http://127.0.0.1:8007/",
     "host": "127.0.0.1",
     "port": 8007,
+    "pid": 42373,
+    "cwd": "/Users/simon/dev/blog",
     "version": "1.0a26",
     "databases": [
-      {"name": "simonwillisonblog", "path": "simonwillisonblog.db"}
+      {"name": "simonwillisonblog", "path": "/Users/simon/dev/blog/simonwillisonblog.db"}
     ],
     "plugins": [
       "datasette-llm",
@@ -96,6 +101,8 @@ datasette-ports --json
     "url": "http://127.0.0.1:8900/",
     "host": "127.0.0.1",
     "port": 8900,
+    "pid": 12345,
+    "cwd": null,
     "version": "0.65.2",
     "databases": [
       {"name": "logs", "path": "/Users/simon/Library/Application Support/io.datasette.llm/logs.db"}

@@ -36,6 +36,13 @@ def mock_probe():
         yield m
 
 
+@pytest.fixture(autouse=True)
+def mock_cwd():
+    with patch("datasette_ports.get_process_cwd") as m:
+        m.return_value = None
+        yield m
+
+
 def _fake_probe(responses):
     async def fake(host, port):
         return responses.get((host, port))
@@ -162,10 +169,10 @@ def test_parse_lsof():
     from datasette_ports import parse_lsof
 
     results = parse_lsof(LSOF_OUTPUT)
-    assert ("127.0.0.1", 8001) in results
-    assert ("127.0.0.1", 8333) in results
-    assert ("127.0.0.1", 8000) in results
-    assert ("0.0.0.0", 8014) in results
+    assert ("127.0.0.1", 8001, 1001) in results
+    assert ("127.0.0.1", 8333, 1002) in results
+    assert ("127.0.0.1", 8000, 1003) in results
+    assert ("0.0.0.0", 8014, 1004) in results
     assert len(results) == 4
 
 
@@ -175,7 +182,49 @@ def test_parse_lsof_wildcard():
     results = parse_lsof(
         "python3.1 1234 user 12u  IPv4 0x456  0t0  TCP *:9000 (LISTEN)\n"
     )
-    assert results == [("0.0.0.0", 9000)]
+    assert results == [("0.0.0.0", 9000, 1234)]
+
+
+def test_cwd_resolves_relative_paths(mock_lsof, mock_probe, mock_cwd):
+    mock_cwd.return_value = "/home/user/project"
+    mock_probe.side_effect = _fake_probe(
+        {
+            ("127.0.0.1", 8001): {
+                "databases": [
+                    {"name": "data", "path": "data.db"},
+                    {"name": "abs", "path": "/tmp/abs.db"},
+                    {"name": "mem", "path": None},
+                ],
+                "version": "1.0a26",
+                "plugins": [],
+            },
+        }
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["ports"])
+    assert result.exit_code == 0, result.output
+    assert "Directory: /home/user/project" in result.output
+    assert "data: /home/user/project/data.db" in result.output
+    assert "abs: /tmp/abs.db" in result.output
+    assert "    mem" in result.output
+
+
+def test_no_cwd_leaves_paths_as_is(mock_lsof, mock_probe, mock_cwd):
+    mock_cwd.return_value = None
+    mock_probe.side_effect = _fake_probe(
+        {
+            ("127.0.0.1", 8001): {
+                "databases": [{"name": "data", "path": "data.db"}],
+                "version": "1.0a26",
+                "plugins": [],
+            },
+        }
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["ports"])
+    assert result.exit_code == 0, result.output
+    assert "Directory" not in result.output
+    assert "data: data.db" in result.output
 
 
 def test_parse_lsof_empty():
