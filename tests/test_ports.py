@@ -57,7 +57,10 @@ def _fake_probe(responses):
     [
         pytest.param(
             [{"name": "data", "path": "/tmp/data.db"}, {"name": "_memory"}],
-            [{"name": "data", "path": "/tmp/data.db"}, {"name": "_memory", "path": None}],
+            [
+                {"name": "data", "path": "/tmp/data.db"},
+                {"name": "_memory", "path": None},
+            ],
             id="list",
         ),
         pytest.param(
@@ -68,7 +71,10 @@ def _fake_probe(responses):
                     {"name": "_memory"},
                 ],
             },
-            [{"name": "data", "path": "/tmp/data.db"}, {"name": "_memory", "path": None}],
+            [
+                {"name": "data", "path": "/tmp/data.db"},
+                {"name": "_memory", "path": None},
+            ],
             id="wrapped-list",
         ),
         pytest.param([], [], id="empty-list"),
@@ -134,15 +140,15 @@ def test_ports_command(mock_lsof, mock_probe):
     runner = CliRunner()
     result = runner.invoke(cli, ["ports"])
     assert result.exit_code == 0, result.output
-    assert "http://127.0.0.1:8001/ - v1.0a26" in result.output
+    assert "http://127.0.0.1:8001/ - v1.0a26 - PID: 1001" in result.output.splitlines()
     assert "  Databases:" in result.output
     assert "    creatures: /tmp/creatures.db" in result.output
     assert "  Plugins:" in result.output
     assert "    datasette-llm" in result.output
-    assert "http://127.0.0.1:8333/ - v0.65.2" in result.output
+    assert "http://127.0.0.1:8333/ - v0.65.2 - PID: 1002" in result.output.splitlines()
     assert "    data: data.db" in result.output
     assert "    logs" in result.output
-    assert "http://0.0.0.0:8014/ - v1.0a26" in result.output
+    assert "http://0.0.0.0:8014/ - v1.0a26 - PID: 1004" in result.output.splitlines()
     assert "    content: content.db" in result.output
     assert "    _internal" in result.output
     assert "    datasette-extract" in result.output

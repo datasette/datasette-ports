@@ -175,7 +175,10 @@ def _find_instances(output_json):
     elif instances:
         for instance in instances:
             version_str = f" - v{instance['version']}" if instance["version"] else ""
-            click.echo(f"{instance['url']}{version_str}")
+            pid_str = (
+                f" - PID: {instance['pid']}" if instance["pid"] is not None else ""
+            )
+            click.echo(f"{instance['url']}{version_str}{pid_str}")
             if instance.get("cwd"):
                 click.echo(f"  Directory: {instance['cwd']}")
             click.echo("  Databases:")
