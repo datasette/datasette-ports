@@ -2,6 +2,7 @@ from datasette.app import Datasette
 from datasette.cli import cli
 from click.testing import CliRunner
 from unittest.mock import patch
+import httpx
 import json
 import pytest
 
@@ -48,6 +49,59 @@ def _fake_probe(responses):
         return responses.get((host, port))
 
     return fake
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "databases_data,expected_databases",
+    [
+        pytest.param(
+            [{"name": "data", "path": "/tmp/data.db"}, {"name": "_memory"}],
+            [{"name": "data", "path": "/tmp/data.db"}, {"name": "_memory", "path": None}],
+            id="list",
+        ),
+        pytest.param(
+            {
+                "ok": True,
+                "databases": [
+                    {"name": "data", "path": "/tmp/data.db"},
+                    {"name": "_memory"},
+                ],
+            },
+            [{"name": "data", "path": "/tmp/data.db"}, {"name": "_memory", "path": None}],
+            id="wrapped-list",
+        ),
+        pytest.param([], [], id="empty-list"),
+        pytest.param({"ok": True, "databases": []}, [], id="wrapped-empty-list"),
+        pytest.param({"ok": True}, None, id="missing-databases"),
+        pytest.param({"ok": True, "databases": None}, None, id="null-databases"),
+        pytest.param({"ok": True, "databases": {}}, None, id="non-list-databases"),
+        pytest.param("not a database list", None, id="invalid-response"),
+    ],
+)
+async def test_probe_port_database_formats(databases_data, expected_databases):
+    from datasette_ports import probe_port
+
+    def handle_request(request):
+        responses = {
+            "/-/databases.json": databases_data,
+            "/-/versions.json": {"ok": True, "datasette": {"version": "1.0a41"}},
+            "/-/plugins.json": [{"name": "datasette-llm"}],
+        }
+        return httpx.Response(200, json=responses[request.url.path])
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handle_request))
+    with patch("datasette_ports.httpx.AsyncClient", return_value=client):
+        result = await probe_port("127.0.0.1", 8001)
+
+    if expected_databases is None:
+        assert result is None
+    else:
+        assert result == {
+            "databases": expected_databases,
+            "version": "1.0a41",
+            "plugins": ["datasette-llm"],
+        }
 
 
 def test_ports_command(mock_lsof, mock_probe):

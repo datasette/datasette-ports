@@ -94,6 +94,8 @@ async def probe_port(host, port):
                 return None
 
             databases_data = databases_resp.json()
+            if isinstance(databases_data, dict):
+                databases_data = databases_data.get("databases")
             if not isinstance(databases_data, list):
                 return None
 
